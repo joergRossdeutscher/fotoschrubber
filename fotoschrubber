@@ -9,7 +9,7 @@ error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
 class commandline {
 
 	var $maxLengthOfCommand=0;
-	
+
 	function __construct() {
 		if(get_parent_class()) parent::__construct();
 		$this->setMaxLengthOfCommand();
@@ -35,7 +35,7 @@ class commandline {
 class basefile {
 	var $folder	= "";
 	var $filename = "";
-	
+
 	function absoluteName( $differentName="" ) {
 		if( strlen($differentName)==0 )	$differentName = $this->filename;
 		return $this->folder . '/' . $differentName;
@@ -49,13 +49,16 @@ class imgFile extends basefile {
 class geoFile extends basefile {
 
 	function applyGeoToImgCollection( imgFileCollection $imgFiles ) {
-	
+
 		$shell = new commandline;
 		$maxLengthOfCommand = $shell->maxLengthOfCommand;
-		
+
 		$commandline = array();
 		$line = 0;
-		$commandExiftool =	'exiftool -overwrite_original -preserve ' .
+		$commandExiftool =	'exiftool ' .
+		                    '-overwrite_original ' .
+		                    '-preserve ' .
+		                    '-api GeoMaxExtSecs=4000 ' .
 							'-geotag ' . escapeshellarg( $this->absoluteName() ) .
 							' ';
 		foreach( $imgFiles->file as $fileList ) {
@@ -66,15 +69,15 @@ class geoFile extends basefile {
 			}
 
 			$imgFileName = escapeshellarg($file) . ' ';
-			
+
 			# 16 , because I am careful.
 			if( mb_strlen($commandline[$line]) + mb_strlen($commandExiftool) + mb_strlen($imgFileName) >= ($maxLengthOfCommand - 16 ) ) {
 				$line++;
 			}
-			
+
 			$commandline[$line] .= $imgFileName;
 		}
-		
+
 		for( $i=0 ; $i<=$line ; $i++ ) {
 			$commandline[$i] = $commandExiftool . $commandline[$i];
 		}
@@ -92,13 +95,13 @@ class fileCollection {
 	function getFilesInFolder( $makeType , $folder , $regexp ) {
 		$filenames = scandir($folder);
 		foreach( $filenames as $filename ) {
-			if(	
+			if(
 				preg_match($regexp , $filename) &&
 				is_file( "$folder/$filename" )
 			) {
 				$tmp	= new $makeType;
 				$tmp->folder	= $folder;
-				$tmp->filename	= $filename; 
+				$tmp->filename	= $filename;
 				$this->file[]	= $tmp;
 				unset( $tmp );
 			}
@@ -121,8 +124,8 @@ class imgFileCollection extends fileCollection {
 	function renameFiles() {
 
 		foreach ($this->file as $file ) {
-			if( preg_match( '/^_/uis' , $file->filename ) ) {
-				$file->newFilename	= preg_replace('/^_/uis' , 'I' , $file->filename );
+			if( preg_match( '/^_MG/uis' , $file->filename ) ) {
+				$file->newFilename	= preg_replace('/^_MG/uis' , 'IMG' , $file->filename );
 			}
 		}
 
@@ -169,7 +172,8 @@ if( ! is_dir($folder) || $folder=='' ) die( "This should never happen.\n");
 
 
 $imgFile = new imgFileCollection;
-$imgFile->getFilesInFolder( 'imgFile' , $folder , '/^[I_]MG_(\d+)\.(JPG|CR2)$/uis' );
+#$imgFile->getFilesInFolder( 'imgFile' , $folder , '/^[I_]MG_(\d+)\.(JPG|CR2)$/uis' );
+$imgFile->getFilesInFolder( 'imgFile' , $folder , '/^.+\.(JPG|CR2)$/uis' );
 $imgFile->renameFiles();
 
 $geoFile = new geoFileCollection;
