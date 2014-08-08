@@ -6,156 +6,7 @@
 
 error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
 
-class commandline {
-
-	var $maxLengthOfCommand=0;
-
-	function __construct() {
-		if(get_parent_class()) parent::__construct();
-		$this->setMaxLengthOfCommand();
-	}
-
-	function setMaxLengthOfCommand() {
-		$length	= shell_exec( 'getconf ARG_MAX' );
-		$length	=preg_replace('/\D/uis' , "", $length);
-		if( ! $length ) 	die("Cannot find out max length of command line.\n");
-		$this->maxLengthOfCommand = $length;
-	}
-
-	function shellExecute( $cmd ) {
-		if( ! is_array($cmd) ) $cmd[0] = $cmd;
-		$ret = array();
-		foreach( $cmd as $c ) {
-			$ret[] = shell_exec( $c );
-		}
-		return $ret;
-	}
-}
-
-class basefile {
-	var $folder	= "";
-	var $filename = "";
-
-	function absoluteName( $differentName="" ) {
-		if( strlen($differentName)==0 )	$differentName = $this->filename;
-		return $this->folder . '/' . $differentName;
-	}
-}
-
-class imgFile extends basefile {
-	var $newFilename = "";
-}
-
-class geoFile extends basefile {
-
-	function applyGeoToImgCollection( imgFileCollection $imgFiles ) {
-
-		$shell = new commandline;
-		$maxLengthOfCommand = $shell->maxLengthOfCommand;
-
-		$commandline = array();
-		$line = 0;
-		$commandExiftool =	'exiftool ' .
-		                    '-overwrite_original ' .
-		                    '-preserve ' .
-		                    '-api GeoMaxExtSecs=4000 ' .
-							'-geotag ' . escapeshellarg( $this->absoluteName() ) .
-							' ';
-		foreach( $imgFiles->file as $fileList ) {
-			$file = $fileList->absoluteName();
-
-			if( ! isset($commandline[$line]) ) {
-				$commandline[$line] = "";
-			}
-
-			$imgFileName = escapeshellarg($file) . ' ';
-
-			# 16 , because I am careful.
-			if( mb_strlen($commandline[$line]) + mb_strlen($commandExiftool) + mb_strlen($imgFileName) >= ($maxLengthOfCommand - 16 ) ) {
-				$line++;
-			}
-
-			$commandline[$line] .= $imgFileName;
-		}
-
-		for( $i=0 ; $i<=$line ; $i++ ) {
-			$commandline[$i] = $commandExiftool . $commandline[$i];
-		}
-
-		$shell->shellExecute( $commandline );
-
-	}
-
-}
-
-class fileCollection {
-
-	var $file	= array();
-
-	function getFilesInFolder( $makeType , $folder , $regexp ) {
-		$filenames = scandir($folder);
-		foreach( $filenames as $filename ) {
-			if(
-				preg_match($regexp , $filename) &&
-				is_file( "$folder/$filename" )
-			) {
-				$tmp	= new $makeType;
-				$tmp->folder	= $folder;
-				$tmp->filename	= $filename;
-				$this->file[]	= $tmp;
-				unset( $tmp );
-			}
-		}
-		return $this;
-	}
-}
-
-class geoFileCollection extends fileCollection {
-
-	function applyGeoCollectionToImgCollection( imgFileCollection $imgFiles ) {
-		foreach( $this->file as $geoFile ) {
-			$geoFile->applyGeoToImgCollection( $imgFiles );
-		}
-	}
-}
-
-class imgFileCollection extends fileCollection {
-
-	function renameFiles() {
-
-		foreach ($this->file as $file ) {
-			if( preg_match( '/^_MG/uis' , $file->filename ) ) {
-				$file->newFilename	= preg_replace('/^_MG/uis' , 'IMG' , $file->filename );
-			}
-		}
-
-		foreach ($this->file as $file ) {
-			if( $file->newFilename ) {
-				if( file_exists( $file->absoluteName($file->newFilename) ) ) {
-					die("Fatal error!\n'" . $file->newFilename . "' already exists!\n");
-				}
-				/* debug print
-			echo	"rename " .
-					$file->folder . '/' . $file->filename .
-					" TO " .
-					$file->folder . '/' . $file->newFilename .
-					"\n";
-			*/
-
-				rename(
-					$file->absoluteName() ,
-					$file->absoluteName($file->newFilename)
-				);
-			
-				$file->filename	= $file->newFilename;
-			}
-			
-			unset( $file->newFilename );
-
-		}
-	}
-}
-
+require_once __DIR__ . "/lib/__autoloader.php";
 
 
 
@@ -172,8 +23,8 @@ if( ! is_dir($folder) || $folder=='' ) die( "This should never happen.\n");
 
 
 $imgFile = new imgFileCollection;
-#$imgFile->getFilesInFolder( 'imgFile' , $folder , '/^[I_]MG_(\d+)\.(JPG|CR2)$/uis' );
 $imgFile->getFilesInFolder( 'imgFile' , $folder , '/^.+\.(JPG|CR2)$/uis' );
+
 $imgFile->renameFiles();
 
 $geoFile = new geoFileCollection;
