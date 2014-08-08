@@ -1,0 +1,172 @@
+#!/usr/bin/php
+<?php
+
+/*
+ * File Modification Date/Time     : 2013:09:28 14:44:06+02:00
+GPS Time Stamp                  : 12:44:06
+GPS Date Stamp                  : 2013:09:28
+Create Date                     : 2013:09:28 14:44:05
+Date/Time Original              : 2013:09:28 14:44:05
+GPS Date/Time                   : 2013:09:28 12:44:06Z
+
+*/
+
+$oneDay = 60 * 60 * 24; // Length of a day in seconds
+
+$csv = __DIR__ . '/out.csv';
+if (file_exists($csv)) {
+    unlink($csv) || die("Cannot delete tempfile.\n");
+}
+
+`exiftool -n -gpslatitude -gpslongitude  -FileModificationDateTime -GPSTimeStamp -GPSDateStamp -CreateDate -DateTimeOriginal -GPSDateTime -csv -r /Users/jrossdeutscher/Desktop/no  > $csv`;
+
+$fileList = csvToArray($csv);
+$dayList = Array();
+
+foreach ($fileList as $file) {
+    if (
+        $file['GPSLatitude'] == '' &&
+        $file['GPSLongitude'] == ''
+    ) {
+        $filename=$file['SourceFile'];
+
+        $file['GPSDateTimeStamp'] = $file['GPSDateStamp'] . ' ' . $file['GPSTimeStamp'];
+        unset($file['GPSDateStamp']);
+        unset($file['GPSTimeStamp']);
+
+        echo $file['SourceFile'] . "\n";
+
+        if ($day = dayFromDate($file['GPSDateTimeStamp'])) {
+            $dayList[$day] = 1;
+        }
+        if ($day = dayFromDate($file['CreateDate'])) {
+            $dayList[$day] = 1;
+        }
+        if ($day = dayFromDate($file['DateTimeOriginal'])) {
+            $dayList[$day] = 1;
+        }
+        if ($day = dayFromDate($file['GPSDateTime'])) {
+            $dayList[$day] = 1;
+        }
+
+        echo "\n\n";
+    }
+}
+
+# Add day before and day after to list.
+# That saves us from dealing with timezones.
+foreach (array_keys($dayList) as $day) {
+    $dayList[dayFromDate(date("Y/m/d", strtotime($day) - $oneDay))] = 1;
+    $dayList[dayFromDate(date("Y/m/d", strtotime($day) + $oneDay))] = 1;
+}
+
+$dayList = array_keys($dayList);
+asort($dayList);
+$dayList = array_values($dayList);
+
+$tmp = Array();
+foreach ($dayList as $day) {
+    $tmp[$day] = 1;
+}
+$dayList = $tmp;
+unset($tmp);
+
+print_r($dayList);
+echo "\n\n";
+
+# Combine days to blocks
+foreach (array_keys($dayList) as $day) {
+    if (isset($dayList[$day])) {
+
+        $changes = true;
+        echo "Check for $day\n";
+        for ($daysInFuture = 1; $changes; $daysInFuture++) {
+            $nextDay = dayFromDate(date("Y/m/d", strtotime($day) + $daysInFuture * $oneDay));
+            echo "$nextDay ?";
+            if (isset($dayList[$nextDay])) {
+                echo "yes\n";
+                unset($dayList[$nextDay]);
+                $dayList[$day]++;
+                $changes = true;
+            } else {
+                $changes = false;
+                echo "no\n";
+            }
+        }
+    }
+}
+
+
+print_r($dayList);
+
+$html = "";
+foreach( $dayList as $day=>$duration ) {
+    $startTime=1407276000000;
+    $endTime=1407362400000;
+
+    $startTime = strtotime($day);
+    $endTime = $startTime + $oneDay * ($duration+1);
+
+// The Google Location history URL - gets the KML.
+    $locationURL = "https://maps.google.com/locationhistory/b/0/kml?startTime=" .
+        $startTime . "000&endTime=" .
+        $endTime . "000";
+
+    $html .= "<a href='{$locationURL}'>{$day} ({$duration})</a><br>\n";
+}
+file_put_contents('out.html' , $html);
+echo "\n\n";
+
+function dayFromDate($date)
+{
+    if ($date > 0) {
+        $parseDate = date_parse($date);
+        $parseDate['month'] = substr('00' . $parseDate['month'], -2);
+        $parseDate['day'] = substr('00' . $parseDate['day'], -2);
+        return ($parseDate['year'] . '/' . $parseDate['month'] . '/' . $parseDate['day']);
+    }
+
+    return;
+}
+
+/**
+ * @param string $filename
+ * @param string $delimiter
+ * @return array|bool
+ */
+function csvToArray($filename = '', $delimiter = ',')
+{
+    /**
+     * Convert a comma separated file into an associated array.
+     * The first row should contain the array keys.
+     *
+     * Example:
+     *
+     * @param string $filename Path to the CSV file
+     * @param string $delimiter The separator used in the file
+     * @return array
+     * @link http://gist.github.com/385876
+     * @author Jay Williams <http://myd3.com/>
+     * @copyright Copyright (c) 2010, Jay Williams
+     * @license http://www.opensource.org/licenses/mit-license.php MIT License
+     */
+    if (!file_exists($filename) || !is_readable($filename)) {
+        return false;
+    }
+    $header = null;
+    $data = array();
+    if (($handle = fopen($filename, 'r')) !== false) {
+        while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
+            if (!$header) {
+                $header = $row;
+            } else {
+                $data[] = array_combine($header, $row);
+            }
+        }
+        fclose($handle);
+    }
+    return $data;
+}
+
+
+?>
