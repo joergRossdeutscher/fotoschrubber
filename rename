@@ -1,0 +1,28 @@
+#!/usr/bin/php
+<?php
+
+# All about this:
+# exiftool -overwrite_original -preserve -geotag $GPX $IMAGEDIR
+
+error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+
+require_once __DIR__ . "/lib/fotoschrubber.php";
+
+
+
+if( count($argv) != 2 ) die( "Please start with exactly 1 parameter: The folder.\n");
+
+$folder = $argv[1];
+
+if( ! is_dir($folder) ) die( "Parameter is not a folder.\n");
+
+$folder	= realpath($folder);
+
+if( ! is_dir($folder) || $folder=='' ) die( "This should never happen.\n");
+
+
+
+$imgFile = new imgFileCollection;
+$imgFile->getFilesInFolder( 'imgFile' , $folder , '/^.+\.(JPG|CR2)$/uis' );
+
+$imgFile->renameFiles();

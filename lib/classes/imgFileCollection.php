@@ -76,21 +76,29 @@ class imgFileCollection extends fileCollection
 
         `$cmd`;
         $fileList = csvToArray($csvTempFile);
+
         if (file_exists($csvTempFile)) {
             unlink($csvTempFile) || die("Cannot delete tempfile.\n");
         }
 
         foreach ($fileList as $file) {
             if (
-                $file['GPSLatitude'] == '' &&
-                $file['GPSLongitude'] == ''
+                @$file['GPSLatitude'] == '' &&
+                @$file['GPSLongitude'] == ''
             ) {
-                $file['GPSDateTimeStamp'] = $file['GPSDateStamp'] . ' ' . $file['GPSTimeStamp'];
-                unset($file['GPSDateStamp']);
-                unset($file['GPSTimeStamp']);
-
+/*
+                if (
+                   @$file['GPSDateStamp'] == '' &&
+                    @$file['GPSTimeStamp'] == ''
+                ) {
+                    $file['GPSDateTimeStamp'] = $file['GPSDateStamp'] . ' ' . $file['GPSTimeStamp'];
+                    unset($file['GPSDateStamp']);
+                    unset($file['GPSTimeStamp']);
+                }
+ */
                 $tmp = new $makeType;
-                foreach (array('GPSDateTimeStamp', 'CreateDate', 'DateTimeOriginal', 'GPSDateTime') as $field) {
+#                foreach (array('GPSDateTimeStamp', 'CreateDate', 'DateTimeOriginal', 'GPSDateTime') as $field) {
+                foreach (array('CreateDate', 'DateTimeOriginal') as $field) {
                     $day = dayFromDate($file[$field]);
                     if ($day) {
                         $tmp->GpsTimeStamps[] = $day;
@@ -111,11 +119,12 @@ class imgFileCollection extends fileCollection
     /**
      *
      */
-    function getListofGpsDates() {
+    function getListofGpsDates()
+    {
         $date = array();
 
-        foreach( $this->file as $file) {
-            $date = array_merge($date , $file->GpsTimeStamps);
+        foreach ($this->file as $file) {
+            $date = array_merge($date, $file->GpsTimeStamps);
         }
 
         $date = array_unique($date);

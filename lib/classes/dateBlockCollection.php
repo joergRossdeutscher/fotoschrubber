@@ -73,7 +73,6 @@ class dateBlockCollection
     function tagImagesDateblockwise(imgFileCollection $imgFileList)
     {
         foreach ($this->dateBlock as $startDate => $days) {
-            echo "searching images in Dateblock: $startDate - $days\n";
             $imageList = $this->getImagesInDateblock($imgFileList, $startDate, $days);
 
             $googleKml = new geoFile;

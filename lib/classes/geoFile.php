@@ -70,23 +70,31 @@ class geoFile extends basefile
     {
         $folder = realpath(__DIR__ . '/../../google');
         $filename = $folder . '/' . preg_replace('/[^0-9_\-]/uis', '_', "{$startDay}-{$duration}") . '.kml';
+        $cookieFile = __DIR__ . '/../../cookie.txt';
 
-        if ( ! file_exists($filename)) {
+        if (!file_exists($filename)) {
             $oneDay = 60 * 60 * 24; // Length of a day in seconds
 
             $startTime = strtotime($startDay);
             $endTime = $startTime + $oneDay * ($duration + 1);
 
-            $locationURL = "https://maps.google.com/locationhistory/b/0/kml?startTime=" .
-                $startTime . "000&endTime=" .
-                $endTime . "000";
+            if ($startTime > time()) {
+                $startTime = time();
+            }
+            if ($endTime > time()) {
+                $endTime = time();
+            }
 
+            $locationURL = "https://maps.google.com/locationhistory/b/0/kml?" .
+                "startTime=" . $startTime . "000&".
+                "endTime=" . $endTime . "000";
 
             $cmd = "curl " .
                 "-s " .
-                "-b cookie.txt " .
+                "-b {$cookieFile} " .
                 "-o {$filename} " .
                 "'{$locationURL}'";
+echo "$cmd\n";
             `$cmd`;
         }
 
