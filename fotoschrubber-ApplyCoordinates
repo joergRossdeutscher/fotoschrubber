@@ -1,0 +1,48 @@
+#!/usr/bin/php
+<?php
+
+
+/**
+ * This Software is the property of Joerg Rossdeutscher and
+ * licensed under GPL v3. See http://www.gnu.org/licenses/gpl-3.0
+ *
+ *
+ * @link      http://www.zeichenwege.de
+ * @copyright (C) Joerg Rossdeutscher 2014
+ * @author    Joerg Rossdeutscher <joerg.rossdeutscher _AT_ zeichenwege.de>
+ */
+
+
+error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+
+require_once __DIR__ . "/lib/fotoschrubber.php";
+
+#https://github.com/nategood/commando
+$cliParameter = new Commando\Command();
+
+$cliParameter->option()
+    ->require()
+    ->describedAs('Latitude');
+
+$cliParameter->option()
+    ->require()
+    ->describedAs('Longitude');
+
+$cliParameter->option()
+    ->require()
+    ->describedAs('Folder');
+
+print_r($cliParameter);
+
+$latitude = $cliParameter[0];
+$longitude = $cliParameter[1];
+$folder = $cliParameter[1];
+
+
+die();
+
+
+$imgFile = new imgFileCollection;
+$imgFile->getFilesInFolder( 'imgFile' , $folder , '/^.+\.(JPG|CR2)$/uis' );
+$imgFile->applyPlainCoordinatesToImgCollection( $latitude , $longitude );
+

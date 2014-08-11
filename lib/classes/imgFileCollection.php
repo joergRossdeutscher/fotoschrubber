@@ -3,17 +3,15 @@
 /**
  * Class imgFileCollection
  *
- * This Software is the property of Joerg Rossdeutscher and is protected
- * by copyright law - it is NOT Freeware.
+ * This Software is the property of Joerg Rossdeutscher and
+ * licensed under GPL v3. See http://www.gnu.org/licenses/gpl-3.0
  *
- * Any unauthorized use of this software without a valid license key
- * is a violation of the license agreement and will be prosecuted by
- * civil and criminal law.
  *
  * @link      http://www.zeichenwege.de
  * @copyright (C) Joerg Rossdeutscher 2014
  * @author    Joerg Rossdeutscher <joerg.rossdeutscher _AT_ zeichenwege.de>
  */
+
 class imgFileCollection extends fileCollection
 {
 
@@ -99,7 +97,7 @@ class imgFileCollection extends fileCollection
                 $tmp = new $makeType;
 #                foreach (array('GPSDateTimeStamp', 'CreateDate', 'DateTimeOriginal', 'GPSDateTime') as $field) {
                 foreach (array('CreateDate', 'DateTimeOriginal') as $field) {
-                    $day = dayFromDate($file[$field]);
+                    $day = @dayFromDate($file[$field]);
                     if ($day) {
                         $tmp->GpsTimeStamps[] = $day;
                     }
@@ -130,4 +128,11 @@ class imgFileCollection extends fileCollection
         $date = array_unique($date);
         return $date;
     }
+
+    function applyPlainCoordinatesToImgCollection( $latitude, $longitude)
+    {
+        die("NOT IMPLEMENTD YET\n");
+
+    }
+
 }

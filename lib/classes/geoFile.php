@@ -3,12 +3,9 @@
 /**
  * Class geoFile
  *
- * This Software is the property of Joerg Rossdeutscher and is protected
- * by copyright law - it is NOT Freeware.
+ * This Software is the property of Joerg Rossdeutscher and
+ * licensed under GPL v3. See http://www.gnu.org/licenses/gpl-3.0
  *
- * Any unauthorized use of this software without a valid license key
- * is a violation of the license agreement and will be prosecuted by
- * civil and criminal law.
  *
  * @link      http://www.zeichenwege.de
  * @copyright (C) Joerg Rossdeutscher 2014
@@ -68,9 +65,11 @@ class geoFile extends basefile
      */
     function downloadGoogleGeoFile($startDay, $duration)
     {
-        $folder = realpath(__DIR__ . '/../../google');
+
+        $folder = $GLOBALS['preferences']->userDirCachesGoogle;
         $filename = $folder . '/' . preg_replace('/[^0-9_\-]/uis', '_', "{$startDay}-{$duration}") . '.kml';
-        $cookieFile = __DIR__ . '/../../cookie.txt';
+
+        $cookieFile = $GLOBALS['preferences']->userDirPreferences . '/cookie.txt';
 
         if (!file_exists($filename)) {
             $oneDay = 60 * 60 * 24; // Length of a day in seconds
@@ -91,10 +90,10 @@ class geoFile extends basefile
 
             $cmd = "curl " .
                 "-s " .
-                "-b {$cookieFile} " .
-                "-o {$filename} " .
+                "-b '{$cookieFile}'' " .
+                "-o '{$filename}'' " .
                 "'{$locationURL}'";
-echo "$cmd\n";
+
             `$cmd`;
         }
 
