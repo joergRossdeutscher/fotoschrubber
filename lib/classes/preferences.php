@@ -18,6 +18,7 @@ class Preferences
     public $userDirCaches;
     public $userDirCachesGoogle;
     public $userDirPreferences;
+    public $googleCookie;
 
     /**
      *
@@ -29,6 +30,7 @@ class Preferences
         $this->userDirCaches = $this->userDirHome . "/Library/Caches/Fotoschrubber";
         $this->userDirCachesGoogle = $this->userDirCaches . "/Google";
         $this->userDirPreferences = $this->userDirHome . "/Library/Preferences/fotoschrubber";
+        $this->googleCookie = $this->userDirPreferences . "/cookie.txt";
 
         $this->userDirForceExist($this->userDirApplication);
         $this->userDirForceExist($this->userDirCaches);
@@ -83,4 +85,17 @@ class Preferences
         }
     }
 
+    /**
+     * @param $file
+     */
+    function editGoogleCookie($file = "")
+    {
+        if ($file == "") {
+            $file = $this->googleCookie;
+        }
+        if(! file_exists($file)) {
+            touch($file);
+        }
+        `open -e '$file'`;
+    }
 }

@@ -11,7 +11,6 @@
  * @copyright (C) Joerg Rossdeutscher 2014
  * @author    Joerg Rossdeutscher <joerg.rossdeutscher _AT_ zeichenwege.de>
  */
-
 class imgFileCollection extends fileCollection
 {
 
@@ -81,19 +80,19 @@ class imgFileCollection extends fileCollection
 
         foreach ($fileList as $file) {
             if (
-                @$file['GPSLatitude'] == '' &&
+            @$file['GPSLatitude'] == '' &&
                 @$file['GPSLongitude'] == ''
             ) {
-/*
-                if (
-                   @$file['GPSDateStamp'] == '' &&
-                    @$file['GPSTimeStamp'] == ''
-                ) {
-                    $file['GPSDateTimeStamp'] = $file['GPSDateStamp'] . ' ' . $file['GPSTimeStamp'];
-                    unset($file['GPSDateStamp']);
-                    unset($file['GPSTimeStamp']);
-                }
- */
+                /*
+                                if (
+                                   @$file['GPSDateStamp'] == '' &&
+                                    @$file['GPSTimeStamp'] == ''
+                                ) {
+                                    $file['GPSDateTimeStamp'] = $file['GPSDateStamp'] . ' ' . $file['GPSTimeStamp'];
+                                    unset($file['GPSDateStamp']);
+                                    unset($file['GPSTimeStamp']);
+                                }
+                 */
                 $tmp = new $makeType;
 #                foreach (array('GPSDateTimeStamp', 'CreateDate', 'DateTimeOriginal', 'GPSDateTime') as $field) {
                 foreach (array('CreateDate', 'DateTimeOriginal') as $field) {
@@ -129,9 +128,57 @@ class imgFileCollection extends fileCollection
         return $date;
     }
 
-    function applyPlainCoordinatesToImgCollection( $latitude, $longitude)
+    function applyPlainCoordinatesToImgCollection($coordinate)
     {
-        die("NOT IMPLEMENTD YET\n");
+
+        $this->executeExiftoolShellCommand(
+             'exiftool ' .
+             '-overwrite_original ' .
+             '-preserve ' .
+             '-exif:gpslatitude=' . $coordinate->latitude . ' ' .
+             '-exif:gpslongitude=' . $coordinate->longitude . ' '
+        );
+
+    }
+
+    /**
+     * @param $commandExiftool
+     * @param imgFileCollection $imgFiles
+     */
+    function executeExiftoolShellCommand($commandExiftool)
+    {
+
+        $shell = new commandline;
+        $maxLengthOfCommand = $shell->maxLengthOfCommand;
+
+        $commandline = array();
+        $line = 0;
+
+        foreach ($this->file as $fileList) {
+            $file = $fileList->absoluteName();
+
+            if (!isset($commandline[$line])) {
+                $commandline[$line] = "";
+            }
+
+            $imgFileName = escapeshellarg($file) . ' ';
+
+            # 16 , because I am careful.
+            if (mb_strlen($commandline[$line]) + mb_strlen($commandExiftool) + mb_strlen(
+                    $imgFileName
+                ) >= ($maxLengthOfCommand - 16)
+            ) {
+                $line++;
+            }
+
+            $commandline[$line] .= $imgFileName;
+        }
+
+        for ($i = 0; $i <= $line; $i++) {
+            $commandline[$i] = $commandExiftool . ' ' . $commandline[$i];
+        }
+
+        $shell->shellExecute($commandline);
 
     }
 

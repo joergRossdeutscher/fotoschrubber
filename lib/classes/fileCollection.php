@@ -27,7 +27,15 @@ class fileCollection
      */
     function getFilesInFolder($makeType, $folder, $regexp)
     {
-        $filenames = scandir($folder);
+        if (is_dir($folder)) {
+            $filenames = scandir($folder);
+        } elseif (is_file($folder)) {
+            $filenames = array(basename($folder));
+            $folder=dirname($folder);
+        } else {
+            die("Cannot find $folder\n");
+        }
+
         foreach ($filenames as $filename) {
             if (
                 preg_match($regexp, $filename) &&
@@ -42,5 +50,6 @@ class fileCollection
         }
         return $this;
     }
+
 
 }

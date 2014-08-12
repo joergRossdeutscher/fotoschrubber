@@ -21,28 +21,24 @@ require_once __DIR__ . "/lib/fotoschrubber.php";
 $cliParameter = new Commando\Command();
 
 $cliParameter->option()
-    ->require()
-    ->describedAs('Latitude');
+             ->require()
+             ->describedAs('Latitude');
 
 $cliParameter->option()
-    ->require()
-    ->describedAs('Longitude');
+             ->require()
+             ->describedAs('Longitude');
 
 $cliParameter->option()
-    ->require()
-    ->describedAs('Folder');
+             ->require()
+             ->describedAs('Folder');
 
-print_r($cliParameter);
-
-$latitude = $cliParameter[0];
-$longitude = $cliParameter[1];
-$folder = $cliParameter[1];
+$coordinate = new coordinates($cliParameter[0] , $cliParameter[1]);
+$folder = $cliParameter[2];
 
 
-die();
 
 
 $imgFile = new imgFileCollection;
-$imgFile->getFilesInFolder( 'imgFile' , $folder , '/^.+\.(JPG|CR2)$/uis' );
-$imgFile->applyPlainCoordinatesToImgCollection( $latitude , $longitude );
+$imgFile->getFilesInFolder('imgFile', $folder, '/^.+\.(JPG|CR2)$/uis');
+$imgFile->applyPlainCoordinatesToImgCollection($coordinate);
 
