@@ -1,0 +1,39 @@
+#!/usr/bin/php
+<?php
+
+/**
+ * This Software is the property of Joerg Rossdeutscher and
+ * licensed under GPL v3. See http://www.gnu.org/licenses/gpl-3.0
+ *
+ *
+ * @link      http://www.zeichenwege.de
+ * @copyright (C) Joerg Rossdeutscher 2014
+ * @author    Joerg Rossdeutscher <joerg.rossdeutscher _AT_ zeichenwege.de>
+ */
+
+
+error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+
+require_once __DIR__ . "/lib/fotoschrubber.php";
+
+
+
+if( count($argv) != 3 ) die( "Please start with exactly 2 parameter: The Mediathek and the target folder.\n");
+
+$folder = $argv[1];
+if( ! is_dir($folder) ) die( "Parameter is not a mediathek.\n");
+$folder	= realpath($folder);
+if( ! is_dir($folder) || $folder=='' ) die( "This should never happen.\n");
+
+$target = $argv[2];
+if( ! is_dir($target) ) die( "Target is not a folder.\n");
+$target	= realpath($target);
+if( ! is_dir($target) || $target=='' ) die( "This should never happen.\n");
+
+
+$imgFile = new iphotoFileCollection;
+#$imgFile->bastel($folder);
+#exit;
+$imgFile->getFilesInIPhotoDb( 'iphotoFile' , $folder );
+$imgFile->moveFiles($target);
+#print_r($imgFile);
