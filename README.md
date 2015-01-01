@@ -16,3 +16,5 @@ For automatically download geodata from Google: A cookie file.
 
 Credits go to Terence Eden for describing how to liberate your Google Location Data and listening me explaining it doesn't work for me. It did. Later.
 http://shkspr.mobi/blog/2014/04/extracting-your-own-location-information-from-google-the-hard-way/
+
+Set timezone in /etc/php.ini

@@ -1,0 +1,1 @@
+# exiftool -globaltimeshift "-0:0:0 1:0:0" -overwrite_original -preserve -api GeoMaxExtSecs=4000 -geotag ~/Desktop/2014-11-09_121233_Hamburg_Nexus4.gpx /Volumes/Big_Boy/Fotosammlung/Fotos/wrk
