@@ -35,5 +35,5 @@ $imgFile = new iphotoFileCollection;
 #$imgFile->bastel($folder);
 #exit;
 $imgFile->getFilesInIPhotoDb( 'iphotoFile' , $folder );
-$imgFile->moveFiles($target);
+$imgFile->moveFiles($folder , $target);
 #print_r($imgFile);

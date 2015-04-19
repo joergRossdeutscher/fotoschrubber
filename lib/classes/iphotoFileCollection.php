@@ -63,11 +63,12 @@ class iphotoFileCollection extends fileCollection
     {
         $db = new sqliteDb($mediathekFile . '/Database/apdb/Library.apdb');
 
-        $result = $db->query('SELECT modelId,uuid,name FROM RKFolder');
+        $result = $db->query('SELECT * FROM RKFolder ORDER by modelId');
 
         $folder = array();
         while ($row = $result->fetchArray()) {
-            $folder[$row['uuid']] = $row['modelId'] . '-' . preg_replace('/\W/uis', '_', $row['name']);
+#            $folder[$row['uuid']] = $row['modelId'] . '-' . preg_replace('/\W/uis', '_', $row['name']);
+            $folder[$row['uuid']] = $this->serializeFoldername(preg_replace('/\W/uis', '_', $row['name']), $row['modelId']);
         }
         $db->closeDb();
         #print_r($folder);exit;
@@ -109,6 +110,11 @@ class iphotoFileCollection extends fileCollection
             $tmp->modelId = $row['modelId'];
 
             $tmp->projectUuid = $row['projectUuid'];
+            if (!isset($fotofolder[$row['projectUuid']])) {
+                #print_r($fotofolder);
+                echo "Cannot interprete folder " . $row['projectUuid'] . " of RKMaster " . $row['modelId'] . "\n";
+                #die();
+            }
             $tmp->fotofolder = $fotofolder[$row['projectUuid']];
 
             #if ($fotofolder[$row['projectUuid']] == "") {
@@ -165,54 +171,120 @@ class iphotoFileCollection extends fileCollection
         echo "-------------------------\n\n";
     }
 
+    /**
+     * @param $filename
+     * @param $serial
+     */
+    function serializeFilename($filename, $serial)
+    {
+        $filename = preg_replace('/___\d+\./uis', '.', $filename);
+        $filename = preg_replace('/^(.*)\.(.*)$/uis', '\1' . '___' . $serial . '.\2', $filename);
+        return $filename;
+    }
 
     /**
+     * @param $foldername
+     * @param $serial
+     * @return mixed|string
+     */
+    function serializeFoldername($foldername, $serial)
+    {
+        $foldername = preg_replace('/^d+___\./uis', '', $foldername);
+        $foldername = sprintf('%012d___%s', $serial, $foldername);
+        return $foldername;
+    }
+
+
+    /**
+     * @param $mediathekFile
      * @param $target
      */
-    function moveFiles($target)
+    function moveFiles($mediathekFile, $target)
     {
+        $db = new sqliteDb($mediathekFile . '/Database/apdb/Library.apdb');
         foreach ($this->file as $file) {
             $sourceFile = $file->folder . '/' . $file->filename;
+            #          if(preg_match('/2010_04_11/uis' , $file->folder)) {
             $targetDir = $target . '/' . $file->fotofolder . '/';
-            $targetFile = $targetDir . $file->filename;
+            $targetFileName = $this->serializeFilename($file->filename, $file->modelId);
+            $targetFile = $targetDir . $targetFileName;
+            $targetFileNoVolume = preg_replace('/^\/(.*?)\/(.*?)\//uis', '', $targetFile);
 
-            # mkdir
-            if (!file_exists($targetDir)) {
-                $this->shell( "mkdir -p " .
-                    escapeshellarg($targetDir . "_misc")
-                );
-            }
+            if (!file_exists($sourceFile)) {
+                echo "File cannot be found: {$sourceFile}\n";
+            } else {
 
-            # cp _jpg
-            $this->shell("cp -a " .
-                escapeshellarg($sourceFile) . " " .
-                escapeshellarg($targetDir)
-            );
-
-            # cp _misc
-            $pathinfo = pathinfo($sourceFile);
-            $sourceFilePattern = $pathinfo['dirname'] . '/' . $pathinfo['filename'];
-            foreach (glob($sourceFilePattern . ".*") as $miscFilename) {
-                if ($miscFilename != $sourceFile) {
-                    $this->shell("cp -a " .
-                        escapeshellarg($miscFilename) . " " .
-                        escapeshellarg($targetDir.'_misc/')
+                # mkdir
+                if (!file_exists($targetDir)) {
+                    $this->shell("mkdir -p " .
+                        escapeshellarg($targetDir . "_misc")
                     );
                 }
-            }
 
-            # Fix DB
-            $query = "UPDATE RKMaster SET imagePath='{$targetFile}' where modelId='" . $file->modelId . "' LIMIT 1";
-            #echo "$query\n\n";
+                # cp _jpg
+#            $this->shell("cp -a " .
+                $this->shell("mv " .
+                    escapeshellarg($sourceFile) . " " .
+                    escapeshellarg($targetFile)
+                );
+
+                # cp _misc
+                $pathinfo = pathinfo($sourceFile);
+                $sourceFilePattern = $pathinfo['dirname'] . '/' . $pathinfo['filename'];
+                foreach (glob($sourceFilePattern . ".*") as $miscFilename) {
+                    if ($miscFilename != $sourceFile) {
+                        $targetMiscFilename = $this->serializeFilename(substr($miscFilename, mb_strlen($pathinfo['dirname']) + 1), $file->modelId);
+#                    die("$targetMiscFilename\n$miscFilename\n");
+#                        $this->shell("cp -a " .
+                        $this->shell("mv " .
+                            escapeshellarg($miscFilename) . " " .
+                            escapeshellarg($targetDir . '_misc/' . $targetMiscFilename)
+                        );
+                    }
+                }
+
+                # Fix DB
+                $query = "UPDATE RKMaster SET imagePath='{$targetFileNoVolume}' , fileName='{$targetFileName}' where modelId='" . $file->modelId . "'";
+                echo "$query\n\n";
+                $result = $db->exec($query);
+                #           }
+            }
         }
+        $db->closeDb();
     }
 
     /**
      * @param $cmd
      */
-    function shell($cmd) {
+    function shell($cmd)
+    {
         echo "{$cmd}\n";
         echo `{$cmd}`;
     }
 
+
+    /**
+     * @param $mediathekFile
+     */
+    function checkConsistency($mediathekFile)
+    {
+        $db = new sqliteDb($mediathekFile . '/Database/apdb/Library.apdb');
+
+        $alreadyFound = array();
+        foreach ($this->file as $imgFile) {
+            $file = mb_strtolower($imgFile->folder . '/' . $imgFile->filename, 'UTF-8');
+            if (!file_exists($file)) {
+                echo "File does not exist: {$file}\n";
+            }
+            if (isset($alreadyFound[$file])) {
+                echo "File is duplicate ({$imgFile->modelId}/{$alreadyFound[$file]}): {$file}\n";
+                $query = "DELETE FROM RKMaster WHERE modelId={$imgFile->modelId}";
+                echo "$query\n\n";
+                #$result = $db->exec($query);
+
+            }
+            $alreadyFound[$file] = $imgFile->modelId;
+        }
+        $db->closeDb();
+    }
 }
