@@ -35,5 +35,5 @@ $imgFile = new imgFileCollection;
 $imgFile->getFilesInFolder( 'imgFile' , $folder , '/^.+\.(JPG|CR2)$/uis' );
 
 $geoFile = new geoFileCollection;
-$geoFile->getFilesInFolder( 'geoFile' , $folder , '/^.+\.(gpx|kml)/uis' );
+$geoFile->getFilesInFolder( 'geoFile' , $folder , '/^.+\.(gpx|kml)$/uis' );
 $geoFile->applyGeoCollectionToImgCollection( $imgFile );
